@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AiAnalyzeRouteImport } from './routes/ai-analyze'
+import { Route as MappingRouteImport } from './routes/mapping'
 import { Route as PreviewRouteImport } from './routes/preview'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const AiAnalyzeRoute = AiAnalyzeRouteImport.update({
   path: '/ai-analyze',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MappingRoute = MappingRouteImport.update({
+  id: '/mapping',
+  path: '/mapping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
@@ -32,30 +38,34 @@ const PreviewRoute = PreviewRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai-analyze': typeof AiAnalyzeRoute
+  '/mapping': typeof MappingRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-analyze': typeof AiAnalyzeRoute
+  '/mapping': typeof MappingRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/ai-analyze': typeof AiAnalyzeRoute
+  '/mapping': typeof MappingRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ai-analyze' | '/preview'
+  fullPaths: '/' | '/ai-analyze' | '/mapping' | '/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai-analyze' | '/preview'
-  id: '__root__' | '/' | '/ai-analyze' | '/preview'
+  to: '/' | '/ai-analyze' | '/mapping' | '/preview'
+  id: '__root__' | '/' | '/ai-analyze' | '/mapping' | '/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiAnalyzeRoute: typeof AiAnalyzeRoute
+  MappingRoute: typeof MappingRoute
   PreviewRoute: typeof PreviewRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiAnalyzeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mapping': {
+      id: '/mapping'
+      path: '/mapping'
+      fullPath: '/mapping'
+      preLoaderRoute: typeof MappingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview': {
       id: '/preview'
       path: '/preview'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiAnalyzeRoute: AiAnalyzeRoute,
+  MappingRoute: MappingRoute,
   PreviewRoute: PreviewRoute,
 }
 export const routeTree = rootRouteImport
