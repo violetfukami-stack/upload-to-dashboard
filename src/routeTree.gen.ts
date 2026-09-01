@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AiAnalyzeRouteImport } from './routes/ai-analyze'
 import { Route as PreviewRouteImport } from './routes/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiAnalyzeRoute = AiAnalyzeRouteImport.update({
+  id: '/ai-analyze',
+  path: '/ai-analyze',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PreviewRoute = PreviewRouteImport.update({
@@ -25,27 +31,31 @@ const PreviewRoute = PreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-analyze': typeof AiAnalyzeRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-analyze': typeof AiAnalyzeRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-analyze': typeof AiAnalyzeRoute
   '/preview': typeof PreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/preview'
+  fullPaths: '/' | '/ai-analyze' | '/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/preview'
-  id: '__root__' | '/' | '/preview'
+  to: '/' | '/ai-analyze' | '/preview'
+  id: '__root__' | '/' | '/ai-analyze' | '/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiAnalyzeRoute: typeof AiAnalyzeRoute
   PreviewRoute: typeof PreviewRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-analyze': {
+      id: '/ai-analyze'
+      path: '/ai-analyze'
+      fullPath: '/ai-analyze'
+      preLoaderRoute: typeof AiAnalyzeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/preview': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiAnalyzeRoute: AiAnalyzeRoute,
   PreviewRoute: PreviewRoute,
 }
 export const routeTree = rootRouteImport
