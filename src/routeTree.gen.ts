@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AiAnalyzeRouteImport } from './routes/ai-analyze'
 import { Route as ConfirmRouteImport } from './routes/confirm'
+import { Route as KpiRouteImport } from './routes/kpi'
 import { Route as MappingRouteImport } from './routes/mapping'
 import { Route as PrepareRouteImport } from './routes/prepare'
 import { Route as PreviewRouteImport } from './routes/preview'
@@ -29,6 +30,11 @@ const AiAnalyzeRoute = AiAnalyzeRouteImport.update({
 const ConfirmRoute = ConfirmRouteImport.update({
   id: '/confirm',
   path: '/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KpiRoute = KpiRouteImport.update({
+  id: '/kpi',
+  path: '/kpi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MappingRoute = MappingRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai-analyze': typeof AiAnalyzeRoute
   '/confirm': typeof ConfirmRoute
+  '/kpi': typeof KpiRoute
   '/mapping': typeof MappingRoute
   '/prepare': typeof PrepareRoute
   '/preview': typeof PreviewRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai-analyze': typeof AiAnalyzeRoute
   '/confirm': typeof ConfirmRoute
+  '/kpi': typeof KpiRoute
   '/mapping': typeof MappingRoute
   '/prepare': typeof PrepareRoute
   '/preview': typeof PreviewRoute
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/ai-analyze': typeof AiAnalyzeRoute
   '/confirm': typeof ConfirmRoute
+  '/kpi': typeof KpiRoute
   '/mapping': typeof MappingRoute
   '/prepare': typeof PrepareRoute
   '/preview': typeof PreviewRoute
@@ -75,14 +84,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/ai-analyze' | '/confirm' | '/mapping' | '/prepare' | '/preview'
+    | '/'
+    | '/ai-analyze'
+    | '/confirm'
+    | '/kpi'
+    | '/mapping'
+    | '/prepare'
+    | '/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ai-analyze' | '/confirm' | '/mapping' | '/prepare' | '/preview'
+  to:
+    | '/'
+    | '/ai-analyze'
+    | '/confirm'
+    | '/kpi'
+    | '/mapping'
+    | '/prepare'
+    | '/preview'
   id:
     | '__root__'
     | '/'
     | '/ai-analyze'
     | '/confirm'
+    | '/kpi'
     | '/mapping'
     | '/prepare'
     | '/preview'
@@ -92,6 +115,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AiAnalyzeRoute: typeof AiAnalyzeRoute
   ConfirmRoute: typeof ConfirmRoute
+  KpiRoute: typeof KpiRoute
   MappingRoute: typeof MappingRoute
   PrepareRoute: typeof PrepareRoute
   PreviewRoute: typeof PreviewRoute
@@ -118,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/confirm'
       fullPath: '/confirm'
       preLoaderRoute: typeof ConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kpi': {
+      id: '/kpi'
+      path: '/kpi'
+      fullPath: '/kpi'
+      preLoaderRoute: typeof KpiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mapping': {
@@ -148,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiAnalyzeRoute: AiAnalyzeRoute,
   ConfirmRoute: ConfirmRoute,
+  KpiRoute: KpiRoute,
   MappingRoute: MappingRoute,
   PrepareRoute: PrepareRoute,
   PreviewRoute: PreviewRoute,
