@@ -10,33 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AiAnalyzeRouteImport } from './routes/ai-analyze'
+import { Route as ConfirmRouteImport } from './routes/confirm'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as KpiRouteImport } from './routes/kpi'
+import { Route as MappingRouteImport } from './routes/mapping'
+import { Route as PrepareRouteImport } from './routes/prepare'
+import { Route as PreviewRouteImport } from './routes/preview'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiAnalyzeRoute = AiAnalyzeRouteImport.update({
+  id: '/ai-analyze',
+  path: '/ai-analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfirmRoute = ConfirmRouteImport.update({
+  id: '/confirm',
+  path: '/confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KpiRoute = KpiRouteImport.update({
+  id: '/kpi',
+  path: '/kpi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MappingRoute = MappingRouteImport.update({
+  id: '/mapping',
+  path: '/mapping',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrepareRoute = PrepareRouteImport.update({
+  id: '/prepare',
+  path: '/prepare',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PreviewRoute = PreviewRouteImport.update({
+  id: '/preview',
+  path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-analyze': typeof AiAnalyzeRoute
+  '/confirm': typeof ConfirmRoute
+  '/dashboard': typeof DashboardRoute
+  '/kpi': typeof KpiRoute
+  '/mapping': typeof MappingRoute
+  '/prepare': typeof PrepareRoute
+  '/preview': typeof PreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-analyze': typeof AiAnalyzeRoute
+  '/confirm': typeof ConfirmRoute
+  '/dashboard': typeof DashboardRoute
+  '/kpi': typeof KpiRoute
+  '/mapping': typeof MappingRoute
+  '/prepare': typeof PrepareRoute
+  '/preview': typeof PreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-analyze': typeof AiAnalyzeRoute
+  '/confirm': typeof ConfirmRoute
+  '/dashboard': typeof DashboardRoute
+  '/kpi': typeof KpiRoute
+  '/mapping': typeof MappingRoute
+  '/prepare': typeof PrepareRoute
+  '/preview': typeof PreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/ai-analyze'
+    | '/confirm'
+    | '/dashboard'
+    | '/kpi'
+    | '/mapping'
+    | '/prepare'
+    | '/preview'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/ai-analyze'
+    | '/confirm'
+    | '/dashboard'
+    | '/kpi'
+    | '/mapping'
+    | '/prepare'
+    | '/preview'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai-analyze'
+    | '/confirm'
+    | '/dashboard'
+    | '/kpi'
+    | '/mapping'
+    | '/prepare'
+    | '/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiAnalyzeRoute: typeof AiAnalyzeRoute
+  ConfirmRoute: typeof ConfirmRoute
+  DashboardRoute: typeof DashboardRoute
+  KpiRoute: typeof KpiRoute
+  MappingRoute: typeof MappingRoute
+  PrepareRoute: typeof PrepareRoute
+  PreviewRoute: typeof PreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +143,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-analyze': {
+      id: '/ai-analyze'
+      path: '/ai-analyze'
+      fullPath: '/ai-analyze'
+      preLoaderRoute: typeof AiAnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confirm': {
+      id: '/confirm'
+      path: '/confirm'
+      fullPath: '/confirm'
+      preLoaderRoute: typeof ConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kpi': {
+      id: '/kpi'
+      path: '/kpi'
+      fullPath: '/kpi'
+      preLoaderRoute: typeof KpiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mapping': {
+      id: '/mapping'
+      path: '/mapping'
+      fullPath: '/mapping'
+      preLoaderRoute: typeof MappingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prepare': {
+      id: '/prepare'
+      path: '/prepare'
+      fullPath: '/prepare'
+      preLoaderRoute: typeof PrepareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preview': {
+      id: '/preview'
+      path: '/preview'
+      fullPath: '/preview'
+      preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiAnalyzeRoute: AiAnalyzeRoute,
+  ConfirmRoute: ConfirmRoute,
+  DashboardRoute: DashboardRoute,
+  KpiRoute: KpiRoute,
+  MappingRoute: MappingRoute,
+  PrepareRoute: PrepareRoute,
+  PreviewRoute: PreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
