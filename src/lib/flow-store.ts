@@ -74,7 +74,7 @@ export function generateDemoRows(): SalesRow[] {
     const weekendBoost = day.getUTCDay() === 0 || day.getUTCDay() === 6 ? 1.18 : 1;
     const perDay = Math.round(28 + rand() * 14 * weekendBoost);
     for (let i = 0; i < perDay; i++) {
-      const item = CATALOG[Math.floor(rand() * CATALOG.length)];
+      const item = CATALOG[Math.floor(rand() * CATALOG.length)]!;
       const qty = 1 + Math.floor(rand() * 8);
       const hour = 8 + Math.floor(rand() * 15);
       rows.push({
@@ -83,7 +83,7 @@ export function generateDemoRows(): SalesRow[] {
         category: item.category,
         quantity: qty,
         revenue: Math.round(item.price * qty * (0.95 + rand() * 0.2) * weekendBoost),
-        channel: CHANNELS[rand() < 0.7 ? 0 : rand() < 0.75 ? 1 : 2],
+        channel: CHANNELS[rand() < 0.7 ? 0 : rand() < 0.75 ? 1 : 2]!,
         customer: `C${1000 + Math.floor(rand() * 900)}`,
         hour,
       });
@@ -133,13 +133,13 @@ export function useFlow(): FlowState {
 export function loadDataset(fileName: string, fileSize: number, rows: SalesRow[]) {
   const columns = ["Date", "Product", "Category", "Quantity", "Revenue", "Channel", "Customer"];
   const insights: ColumnInsight[] = [
-    { column: "Date", meaning: "วันที่ขาย", confidence: 98, target: TARGETS[0] },
-    { column: "Product", meaning: "รหัสหรือชื่อสินค้า", confidence: 95, target: TARGETS[1] },
-    { column: "Category", meaning: "หมวดหมู่สินค้า", confidence: 90, target: TARGETS[2] },
-    { column: "Quantity", meaning: "จำนวนที่ขาย", confidence: 97, target: TARGETS[3] },
-    { column: "Revenue", meaning: "ยอดขายรวม", confidence: 96, target: TARGETS[4] },
-    { column: "Channel", meaning: "ช่องทางการขาย", confidence: 92, target: TARGETS[5] },
-    { column: "Customer", meaning: "รหัสลูกค้า", confidence: 88, target: TARGETS[6] },
+    { column: "Date", meaning: "วันที่ขาย", confidence: 98, target: TARGETS[0]! },
+    { column: "Product", meaning: "รหัสหรือชื่อสินค้า", confidence: 95, target: TARGETS[1]! },
+    { column: "Category", meaning: "หมวดหมู่สินค้า", confidence: 90, target: TARGETS[2]! },
+    { column: "Quantity", meaning: "จำนวนที่ขาย", confidence: 97, target: TARGETS[3]! },
+    { column: "Revenue", meaning: "ยอดขายรวม", confidence: 96, target: TARGETS[4]! },
+    { column: "Channel", meaning: "ช่องทางการขาย", confidence: 92, target: TARGETS[5]! },
+    { column: "Customer", meaning: "รหัสลูกค้า", confidence: 88, target: TARGETS[6]! },
   ];
   setFlow({ fileName, fileSize, rows, columns, insights, mappingConfirmed: false, cleaned: false });
 }
@@ -147,7 +147,7 @@ export function loadDataset(fileName: string, fileSize: number, rows: SalesRow[]
 export function parseCsv(text: string): SalesRow[] {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const header = lines[0].split(",").map((h) => h.trim().toLowerCase());
+  const header = lines[0]!.split(",").map((h) => h.trim().toLowerCase());
   const idx = (names: string[]) => header.findIndex((h) => names.includes(h));
   const iDate = idx(["date", "วันที่", "saledate"]);
   const iProduct = idx(["product", "สินค้า", "item"]);
@@ -159,16 +159,17 @@ export function parseCsv(text: string): SalesRow[] {
   const rows: SalesRow[] = [];
   for (const line of lines.slice(1)) {
     const c = line.split(",");
-    const date = (iDate >= 0 ? c[iDate] : "").trim();
+    const at = (i: number, fb: string) => (i >= 0 ? (c[i] ?? fb) : fb);
+    const date = at(iDate, "").trim();
     if (!date) continue;
     rows.push({
       date,
-      product: (iProduct >= 0 ? c[iProduct] : "ไม่ระบุ").trim(),
-      category: (iCat >= 0 ? c[iCat] : "ไม่ระบุ").trim(),
-      quantity: Number(iQty >= 0 ? c[iQty] : 1) || 1,
-      revenue: Number(iRev >= 0 ? c[iRev] : 0) || 0,
-      channel: (iChannel >= 0 ? c[iChannel] : "หน้าร้าน").trim(),
-      customer: (iCustomer >= 0 ? c[iCustomer] : "-").trim(),
+      product: at(iProduct, "ไม่ระบุ").trim(),
+      category: at(iCat, "ไม่ระบุ").trim(),
+      quantity: Number(at(iQty, "1")) || 1,
+      revenue: Number(at(iRev, "0")) || 0,
+      channel: at(iChannel, "หน้าร้าน").trim(),
+      customer: at(iCustomer, "-").trim(),
       hour: 8 + (rows.length % 15),
     });
   }
