@@ -109,13 +109,44 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
+const KEY = "sales-flow-state";
+
+function persist() {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(KEY, JSON.stringify(state));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
 export function setFlow(patch: Partial<FlowState>) {
   state = { ...state, ...patch };
+  persist();
   emit();
+}
+
+let hydrated = false;
+
+export function hydrateFlow() {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+  try {
+    const raw = window.sessionStorage.getItem(KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as FlowState;
+    if (parsed && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
+      state = { ...initial, ...parsed };
+      emit();
+    }
+  } catch {
+    /* ignore corrupt state */
+  }
 }
 
 export function resetFlow() {
   state = initial;
+  persist();
   emit();
 }
 

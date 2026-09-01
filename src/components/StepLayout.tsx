@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { hydrateFlow } from "@/lib/flow-store";
 
 export const STEPS = [
   { n: 1, to: "/", title: "นำเข้าข้อมูลยอดขายจากไฟล์ CSV / Excel", short: "นำเข้าไฟล์" },
@@ -30,6 +31,10 @@ export function StepLayout({
   nextDisabled?: boolean;
   disabledHint?: string;
 }) {
+  useEffect(() => {
+    hydrateFlow();
+  }, []);
+
   const current = STEPS[step - 1]!;
   const prev = STEPS[step - 2];
   const next = STEPS[step];
