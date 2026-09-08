@@ -18,11 +18,15 @@ export type ColumnInsight = {
   target: string;
 };
 
+export type RawRow = Record<string, string>;
+
 export type FlowState = {
   fileName: string | null;
   fileSize: number | null;
+  sheetName: string | null;
   rows: SalesRow[];
   columns: string[];
+  previewRows: RawRow[];
   insights: ColumnInsight[];
   mappingConfirmed: boolean;
   cleaned: boolean;
@@ -95,8 +99,10 @@ export function generateDemoRows(): SalesRow[] {
 const initial: FlowState = {
   fileName: null,
   fileSize: null,
+  sheetName: null,
   rows: [],
   columns: [],
+  previewRows: [],
   insights: [],
   mappingConfirmed: false,
   cleaned: false,
@@ -113,10 +119,26 @@ const KEY = "sales-flow-state";
 
 function persist() {
   if (typeof window === "undefined") return;
+  const slim: FlowState = {
+    ...state,
+    previewRows: state.previewRows.slice(0, 200),
+    rows: state.rows.slice(0, 12_000),
+  };
   try {
-    window.sessionStorage.setItem(KEY, JSON.stringify(state));
+    window.sessionStorage.setItem(KEY, JSON.stringify(slim));
   } catch {
-    /* ignore quota errors */
+    try {
+      window.sessionStorage.setItem(
+        KEY,
+        JSON.stringify({
+          ...slim,
+          previewRows: slim.previewRows.slice(0, 30),
+          rows: slim.rows.slice(0, 400),
+        }),
+      );
+    } catch {
+      /* ignore quota errors */
+    }
   }
 }
 
@@ -135,8 +157,24 @@ export function hydrateFlow() {
     const raw = window.sessionStorage.getItem(KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw) as FlowState;
-    if (parsed && Array.isArray(parsed.rows) && parsed.rows.length > 0) {
-      state = { ...initial, ...parsed };
+    if (
+      parsed &&
+      ((Array.isArray(parsed.previewRows) && parsed.previewRows.length > 0) ||
+        (Array.isArray(parsed.rows) && parsed.rows.length > 0))
+    ) {
+      state = {
+        ...initial,
+        ...parsed,
+        previewRows: Array.isArray(parsed.previewRows) ? parsed.previewRows : [],
+        columns: Array.isArray(parsed.columns) ? parsed.columns : [],
+      };
+      if (state.previewRows.length === 0 && state.rows.length > 0) {
+        state = {
+          ...state,
+          previewRows: state.rows.map(salesRowToPreview),
+          columns: state.columns.length ? state.columns : STANDARD_COLUMNS,
+        };
+      }
       emit();
     }
   } catch {
@@ -161,50 +199,114 @@ export function useFlow(): FlowState {
   );
 }
 
-export function loadDataset(fileName: string, fileSize: number, rows: SalesRow[]) {
-  const columns = ["Date", "Product", "Category", "Quantity", "Revenue", "Channel", "Customer"];
-  const insights: ColumnInsight[] = [
-    { column: "Date", meaning: "วันที่ขาย", confidence: 98, target: TARGETS[0]! },
-    { column: "Product", meaning: "รหัสหรือชื่อสินค้า", confidence: 95, target: TARGETS[1]! },
-    { column: "Category", meaning: "หมวดหมู่สินค้า", confidence: 90, target: TARGETS[2]! },
-    { column: "Quantity", meaning: "จำนวนที่ขาย", confidence: 97, target: TARGETS[3]! },
-    { column: "Revenue", meaning: "ยอดขายรวม", confidence: 96, target: TARGETS[4]! },
-    { column: "Channel", meaning: "ช่องทางการขาย", confidence: 92, target: TARGETS[5]! },
-    { column: "Customer", meaning: "รหัสลูกค้า", confidence: 88, target: TARGETS[6]! },
-  ];
-  setFlow({ fileName, fileSize, rows, columns, insights, mappingConfirmed: false, cleaned: false });
+function salesRowToPreview(row: SalesRow): RawRow {
+  return {
+    Date: row.date,
+    Product: row.product,
+    Category: row.category,
+    Quantity: String(row.quantity),
+    Revenue: String(row.revenue),
+    Channel: row.channel,
+    Customer: row.customer,
+  };
 }
 
-export function parseCsv(text: string): SalesRow[] {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
-  const header = lines[0]!.split(",").map((h) => h.trim().toLowerCase());
-  const idx = (names: string[]) => header.findIndex((h) => names.includes(h));
-  const iDate = idx(["date", "วันที่", "saledate"]);
-  const iProduct = idx(["product", "สินค้า", "item"]);
-  const iCat = idx(["category", "หมวดหมู่"]);
-  const iQty = idx(["quantity", "qty", "จำนวน"]);
-  const iRev = idx(["revenue", "sales", "ยอดขาย", "amount"]);
-  const iChannel = idx(["channel", "ช่องทาง"]);
-  const iCustomer = idx(["customer", "ลูกค้า"]);
-  const rows: SalesRow[] = [];
-  for (const line of lines.slice(1)) {
-    const c = line.split(",");
-    const at = (i: number, fb: string) => (i >= 0 ? (c[i] ?? fb) : fb);
-    const date = at(iDate, "").trim();
-    if (!date) continue;
-    rows.push({
-      date,
-      product: at(iProduct, "ไม่ระบุ").trim(),
-      category: at(iCat, "ไม่ระบุ").trim(),
-      quantity: Number(at(iQty, "1")) || 1,
-      revenue: Number(at(iRev, "0")) || 0,
-      channel: at(iChannel, "หน้าร้าน").trim(),
-      customer: at(iCustomer, "-").trim(),
-      hour: 8 + (rows.length % 15),
-    });
+function normalizeHeader(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function findColumn(columns: string[], aliases: string[]) {
+  const set = new Set(aliases.map(normalizeHeader));
+  return columns.find((col) => set.has(normalizeHeader(col))) ?? null;
+}
+
+function parseNumber(value: string, fallback: number) {
+  const n = Number(String(value).replace(/,/g, "").trim());
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function guessInsight(column: string): ColumnInsight {
+  const key = normalizeHeader(column);
+  const rules: { aliases: string[]; meaning: string; confidence: number; target: string }[] = [
+    { aliases: ["date", "วันที่", "saledate", "orderdate"], meaning: "วันที่ขาย", confidence: 96, target: TARGETS[0]! },
+    { aliases: ["product", "สินค้า", "item", "sku"], meaning: "รหัสหรือชื่อสินค้า", confidence: 94, target: TARGETS[1]! },
+    { aliases: ["category", "หมวดหมู่", "หมวด"], meaning: "หมวดหมู่สินค้า", confidence: 90, target: TARGETS[2]! },
+    { aliases: ["quantity", "qty", "จำนวน"], meaning: "จำนวนที่ขาย", confidence: 95, target: TARGETS[3]! },
+    { aliases: ["revenue", "sales", "ยอดขาย", "amount", "total"], meaning: "ยอดขายรวม", confidence: 94, target: TARGETS[4]! },
+    { aliases: ["channel", "ช่องทาง"], meaning: "ช่องทางการขาย", confidence: 90, target: TARGETS[5]! },
+    { aliases: ["customer", "ลูกค้า", "custid"], meaning: "รหัสลูกค้า", confidence: 88, target: TARGETS[6]! },
+  ];
+  const hit = rules.find((r) => r.aliases.includes(key));
+  if (hit) {
+    return { column, meaning: hit.meaning, confidence: hit.confidence, target: hit.target };
   }
-  return rows;
+  return {
+    column,
+    meaning: "คอลัมน์จากไฟล์ที่นำเข้า ยังไม่ได้จับคู่กับฟิลด์มาตรฐาน",
+    confidence: 55,
+    target: TARGETS[7]!,
+  };
+}
+
+export function mapRecordsToSales(columns: string[], records: RawRow[]): SalesRow[] {
+  const dateCol = findColumn(columns, ["date", "วันที่", "saledate", "orderdate"]);
+  const productCol = findColumn(columns, ["product", "สินค้า", "item", "sku"]);
+  const catCol = findColumn(columns, ["category", "หมวดหมู่", "หมวด"]);
+  const qtyCol = findColumn(columns, ["quantity", "qty", "จำนวน"]);
+  const revCol = findColumn(columns, ["revenue", "sales", "ยอดขาย", "amount", "total"]);
+  const channelCol = findColumn(columns, ["channel", "ช่องทาง"]);
+  const customerCol = findColumn(columns, ["customer", "ลูกค้า", "custid"]);
+  const hourCol = findColumn(columns, ["hour", "ชั่วโมง"]);
+
+  return records.map((record, i) => {
+    const date = dateCol ? record[dateCol] ?? "" : "";
+    return {
+      date,
+      product: productCol ? record[productCol] || "ไม่ระบุ" : "ไม่ระบุ",
+      category: catCol ? record[catCol] || "ไม่ระบุ" : "ไม่ระบุ",
+      quantity: parseNumber(qtyCol ? record[qtyCol] ?? "1" : "1", 1),
+      revenue: parseNumber(revCol ? record[revCol] ?? "0" : "0", 0),
+      channel: channelCol ? record[channelCol] || "หน้าร้าน" : "หน้าร้าน",
+      customer: customerCol ? record[customerCol] || "-" : "-",
+      hour: hourCol ? parseNumber(record[hourCol] ?? "8", 8) : 8 + (i % 15),
+    };
+  });
+}
+
+const STANDARD_COLUMNS = ["Date", "Product", "Category", "Quantity", "Revenue", "Channel", "Customer"];
+
+export function loadDataset(fileName: string, fileSize: number, rows: SalesRow[]) {
+  const insights = STANDARD_COLUMNS.map((column) => guessInsight(column));
+  setFlow({
+    fileName,
+    fileSize,
+    sheetName: "sample",
+    rows,
+    columns: STANDARD_COLUMNS,
+    previewRows: rows.map(salesRowToPreview),
+    insights,
+    mappingConfirmed: false,
+    cleaned: false,
+  });
+}
+
+export function loadParsedTable(
+  fileName: string,
+  fileSize: number,
+  table: { columns: string[]; records: RawRow[]; sheetName?: string },
+) {
+  const insights = table.columns.map(guessInsight);
+  setFlow({
+    fileName,
+    fileSize,
+    sheetName: table.sheetName ?? null,
+    rows: mapRecordsToSales(table.columns, table.records),
+    columns: table.columns,
+    previewRows: table.records,
+    insights,
+    mappingConfirmed: false,
+    cleaned: false,
+  });
 }
 
 export const baht = (n: number) => "฿" + Math.round(n).toLocaleString("en-US");
