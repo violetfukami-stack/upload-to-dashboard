@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EmptyNotice, Panel, StepLayout } from "@/components/StepLayout";
 import { num, useFlow } from "@/lib/flow-store";
+import { inferColumnType } from "@/lib/parse-file";
 
 export const Route = createFileRoute("/preview")({
   head: () => ({
@@ -20,20 +21,12 @@ export const Route = createFileRoute("/preview")({
   component: StepTwo,
 });
 
-const TYPES: Record<string, string> = {
-  Date: "Date",
-  Product: "Text",
-  Category: "Text",
-  Quantity: "Number",
-  Revenue: "Number",
-  Channel: "Text",
-  Customer: "Text",
-};
-
 function StepTwo() {
   const flow = useFlow();
+  const columns = flow.columns;
+  const previewRows = flow.previewRows.length > 0 ? flow.previewRows : [];
 
-  if (flow.rows.length === 0) {
+  if (previewRows.length === 0 && flow.rows.length === 0) {
     return (
       <StepLayout step={2} description="ระบบสามารถแสดงตัวอย่างและโครงสร้างของข้อมูลที่นำเข้าได้">
         <EmptyNotice>ยังไม่มีข้อมูลนำเข้า กรุณาอัปโหลดไฟล์ในขั้นตอนที่ 1 ก่อน</EmptyNotice>
@@ -41,7 +34,7 @@ function StepTwo() {
     );
   }
 
-  const sample = flow.rows.slice(0, 8);
+  const sample = previewRows.slice(0, 12);
 
   return (
     <StepLayout
@@ -52,14 +45,17 @@ function StepTwo() {
         <Panel>
           <p className="text-xs text-muted-foreground">ไฟล์</p>
           <p className="mt-1 truncate text-sm font-semibold">{flow.fileName}</p>
+          {flow.sheetName ? (
+            <p className="mt-1 text-xs text-muted-foreground">ชีท: {flow.sheetName}</p>
+          ) : null}
         </Panel>
         <Panel>
           <p className="text-xs text-muted-foreground">จำนวนแถว</p>
-          <p className="mt-1 text-sm font-semibold">{num(flow.rows.length)} แถว</p>
+          <p className="mt-1 text-sm font-semibold">{num(previewRows.length)} แถว</p>
         </Panel>
         <Panel>
           <p className="text-xs text-muted-foreground">จำนวนคอลัมน์</p>
-          <p className="mt-1 text-sm font-semibold">{flow.columns.length} คอลัมน์</p>
+          <p className="mt-1 text-sm font-semibold">{columns.length} คอลัมน์</p>
         </Panel>
       </div>
 
@@ -69,7 +65,7 @@ function StepTwo() {
             <table className="w-full text-left text-xs">
               <thead className="text-muted-foreground">
                 <tr className="border-b border-border">
-                  {flow.columns.map((c) => (
+                  {columns.map((c) => (
                     <th key={c} className="whitespace-nowrap px-2 py-2 font-medium">
                       {c}
                     </th>
@@ -79,20 +75,20 @@ function StepTwo() {
               <tbody>
                 {sample.map((r, i) => (
                   <tr key={i} className="border-b border-border/60">
-                    <td className="px-2 py-2">{r.date}</td>
-                    <td className="px-2 py-2">{r.product}</td>
-                    <td className="px-2 py-2">{r.category}</td>
-                    <td className="px-2 py-2">{r.quantity}</td>
-                    <td className="px-2 py-2">{r.revenue.toFixed(2)}</td>
-                    <td className="px-2 py-2">{r.channel}</td>
-                    <td className="px-2 py-2">{r.customer}</td>
+                    {columns.map((c) => (
+                      <td key={c} className="whitespace-nowrap px-2 py-2">
+                        {r[c] ?? ""}
+                      </td>
+                    ))}
                   </tr>
                 ))}
-                <tr>
-                  <td className="px-2 py-2 text-muted-foreground" colSpan={flow.columns.length}>
-                    ... อีก {num(flow.rows.length - sample.length)} แถว
-                  </td>
-                </tr>
+                {previewRows.length > sample.length ? (
+                  <tr>
+                    <td className="px-2 py-2 text-muted-foreground" colSpan={columns.length}>
+                      ... อีก {num(previewRows.length - sample.length)} แถว
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -107,10 +103,12 @@ function StepTwo() {
               </tr>
             </thead>
             <tbody>
-              {flow.columns.map((c) => (
+              {columns.map((c) => (
                 <tr key={c} className="border-b border-border/60">
                   <td className="px-2 py-2 font-medium">{c}</td>
-                  <td className="px-2 py-2 text-muted-foreground">{TYPES[c] ?? "Text"}</td>
+                  <td className="px-2 py-2 text-muted-foreground">
+                    {inferColumnType(previewRows.map((row) => row[c] ?? ""))}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileSpreadsheet, UploadCloud, Sparkles } from "lucide-react";
 import { useRef, useState } from "react";
 import { Panel, StepLayout } from "@/components/StepLayout";
-import { generateDemoRows, loadDataset, parseCsv, useFlow } from "@/lib/flow-store";
+import { generateDemoRows, loadDataset, loadParsedTable, useFlow } from "@/lib/flow-store";
+import { isAcceptedSpreadsheet, parseUploadedFile } from "@/lib/parse-file";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,6 +32,7 @@ function StepOne() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [drag, setDrag] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -38,32 +40,36 @@ function StepOne() {
       setError("ไฟล์มีขนาดเกิน 30 MB กรุณาแบ่งไฟล์ก่อนนำเข้า");
       return;
     }
-    const isCsv = /\.csv$/i.test(file.name);
-    if (isCsv) {
-      const rows = parseCsv(await file.text());
-      if (rows.length === 0) {
-        setError("ไม่พบข้อมูลในไฟล์ หรือรูปแบบคอลัมน์ไม่ถูกต้อง");
-        return;
-      }
-      loadDataset(file.name, file.size, rows);
-    } else {
-      loadDataset(file.name, file.size, generateDemoRows());
+    if (!isAcceptedSpreadsheet(file.name)) {
+      setError("รองรับเฉพาะไฟล์ .csv, .xlsx และ .xls");
+      return;
     }
-    navigate({ to: "/preview" });
+
+    setBusy(true);
+    try {
+      const table = await parseUploadedFile(file);
+      loadParsedTable(file.name, file.size, table);
+      navigate({ to: "/preview" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "อ่านไฟล์ไม่สำเร็จ กรุณาตรวจสอบรูปแบบไฟล์");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
   };
 
   return (
     <StepLayout
       step={1}
       description="ระบบสามารถนำเข้าข้อมูลยอดขายจากไฟล์ CSV/Excel ที่ผู้ใช้งานจัดเตรียม"
-      nextDisabled={flow.rows.length === 0}
+      nextDisabled={flow.previewRows.length === 0 && flow.rows.length === 0}
       disabledHint="กรุณาอัปโหลดไฟล์ หรือใช้ข้อมูลตัวอย่างก่อนไปขั้นตอนถัดไป"
     >
       <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-4">
           <Panel title="ข้อกำหนดของไฟล์">
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>• รูปแบบไฟล์: .csv, .xlsx</li>
+              <li>• รูปแบบไฟล์: .csv, .xlsx, .xls</li>
               <li>• ขนาดไม่เกิน 30 MB หรือประมาณ 100,000 แถว</li>
               <li>
                 • คอลัมน์ที่แนะนำ: Date, Product, Category, Quantity, Revenue, Channel, Customer
@@ -117,15 +123,16 @@ function StepOne() {
             <p className="mt-4 text-base font-semibold">Drag &amp; Drop ไฟล์ยอดขายที่นี่</p>
             <p className="mt-1 text-sm text-muted-foreground">หรือเลือกไฟล์จากเครื่องของคุณ</p>
             <button
+              disabled={busy}
               onClick={() => inputRef.current?.click()}
-              className="mt-5 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="mt-5 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
             >
-              Upload
+              {busy ? "กำลังอ่านไฟล์..." : "Upload"}
             </button>
             <input
               ref={inputRef}
               type="file"
-              accept=".csv,.xlsx,.xls"
+              accept=".csv,.xlsx,.xls,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -136,7 +143,7 @@ function StepOne() {
             {flow.fileName ? (
               <p className="mt-4 text-sm text-muted-foreground">
                 ไฟล์ล่าสุด: <span className="font-medium text-foreground">{flow.fileName}</span> (
-                {flow.rows.length.toLocaleString()} แถว)
+                {(flow.previewRows.length || flow.rows.length).toLocaleString()} แถว)
               </p>
             ) : null}
           </div>
